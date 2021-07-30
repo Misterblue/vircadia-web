@@ -3,5 +3,13 @@
   "vetur.format.enable": false,
   "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"],
   
-  "vetur.experimental.templateInterpolationService": true
+  "vetur.experimental.templateInterpolationService": true,
+
+  "files.watcherExclude": {
+      "./.git/*": true,
+      "./.git/*/**": true,
+      "./node_modules/*": true,
+      "./node_modules/**/*": true,
+      "./.hg/store/**": true
+  }
 }

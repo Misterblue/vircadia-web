@@ -39,11 +39,12 @@
         "strictPropertyInitialization": true
     },
     "include": [
-        "./src/**/*",
-        "./tests/**/*",
-        "./.*.js",
+        "./src/**/*.ts",
+        "./src/**/*.js",
+        "./src/**/*.vue",
         "./*.js",
-        "./*.json"
+        "./.*.js",
+        "./tests/**/*"
     ],
     "exclude": [
         "./node_modules/**/*"
