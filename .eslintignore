@@ -1,8 +1,4 @@
 /dist
-/src-bex/www
-/src-capacitor
-/src-cordova
-/.quasar
+/docs
+/jsdoc
 /node_modules
-.eslintrc.js
-babel.config.js
