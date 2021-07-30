@@ -8,9 +8,9 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 */
 
-import { store } from 'quasar/wrappers';
-import { createStore } from 'vuex';
-import packageInfo from '../../package.json';
+import { store } from "quasar/wrappers";
+import { createStore } from "vuex";
+import packageInfo from "../../package.json";
 
 /*
 * If not building with SSR mode, you can
@@ -34,11 +34,12 @@ export default store(function (/* { ssrContext } */) {
                 SAFETY_BEFORE_SESSION_TIMEOUT: 21600 // If a token has 6 or less hours left on its life, refresh it.
             },
             metaverseConfig: { // Prefilled with initial values
-                name: '',
-                nickname: '',
-                server: 'https://metaverse.vircadia.com/live', // This needs to at least be pre-filled in order to get all other config information.
-                iceServer: '',
-                serverVersion: ''
+                name: "",
+                nickname: "",
+                // "server" needs to at least be pre-filled in order to get all other config information.
+                server: "https://metaverse.vircadia.com/live",
+                iceServer: "",
+                serverVersion: ""
             },
             account: {
                 isLoggedIn: false, // bool
@@ -64,20 +65,20 @@ export default store(function (/* { ssrContext } */) {
                 }
             },
             profile: {
-                displayName: ''
+                displayName: ""
             },
             dialog: {
                 show: false,
-                which: '',
+                which: "",
                 notice: {
-                    title: '',
-                    message: ''
+                    title: "",
+                    message: ""
                 }
             },
             error: {
-                title: '',
-                code: '',
-                full: ''
+                title: "",
+                code: "",
+                full: ""
             },
             dashboardConfig: {
                 dashboardTheme: 2 // int
@@ -94,8 +95,8 @@ export default store(function (/* { ssrContext } */) {
                 ]
             },
             location: {
-                current: '',
-                state: 'Not Connected'
+                current: "",
+                state: "Not Connected"
             },
             // Mounted Classes - mounted from App.vue
             Audio: {
@@ -106,8 +107,8 @@ export default store(function (/* { ssrContext } */) {
         },
 
         mutations: {
-            mutate (state, payload) {
-                const segments = payload.property.split('.');
+            mutate(state, payload) {
+                const segments = payload.property.split(".");
                 let base = state;
                 while (segments.length > 1) {
                     const segment = segments.shift();
@@ -126,13 +127,15 @@ export default store(function (/* { ssrContext } */) {
                     }
                 }
 
-                // if (state.debugging) console.info('Payload:', payload.property, 'with:', payload.with, 'state is now:', this.state);
+                // if (state.debugging) {
+                //     console.info("Payload:", payload.property, "with:", payload.with, "state is now:", this.state);
+                // }
             }
         },
 
         // enable strict mode (adds overhead!)
         // for dev mode and --debug builds only
-        strict: process.env.DEBUGGING
+        strict: process.env["DEBUGGING"]
     });
 
     return Store;

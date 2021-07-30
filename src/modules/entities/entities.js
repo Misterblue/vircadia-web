@@ -8,21 +8,21 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 */
 
-import * as BABYLON from 'babylonjs';
-import 'babylonjs-loaders';
+import * as BABYLON from "babylonjs";
+import "babylonjs-loaders";
 // General Modules
-import Debug from '../debugging/debug.js';
-import Log from '../debugging/log.js';
+import Debug from "../debugging/debug.js";
+import Log from "../debugging/log.js";
 // System Modules
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 
 export class Entities {
     constructor (store, prop) {
         this.importModel = async (name, modelUrl, scene) => {
             return new Promise(function (resolve, reject) {
                 const parsedUrl = new URL(modelUrl);
-                const urlWithoutFilename = modelUrl.substring(0, modelUrl.lastIndexOf('/')) + '/';
-                const filename = parsedUrl.pathname.split('/').pop();
+                const urlWithoutFilename = modelUrl.substring(0, modelUrl.lastIndexOf("/")) + "/";
+                const filename = parsedUrl.pathname.split("/").pop();
 
                 BABYLON.SceneLoader.ImportMeshAsync(name, urlWithoutFilename, filename, scene).then((result) => {
                     resolve(result.meshes[0]);
@@ -33,36 +33,36 @@ export class Entities {
 
     async addEntity(scene, properties, entityHostType) {
         if (!properties.type) {
-            Debug.error('ENTITIES', 'Failed to specify entity type.');
+            Debug.error("ENTITIES", "Failed to specify entity type.");
             return false;
         }
 
         let entity;
 
-        // If no UUID is given for the entity, we'll make one now.
+        // If no UUID is given for the entity, we"ll make one now.
         if (!properties.id) {
             properties.id = uuidv4();
         }
 
         // Create the entity.
         switch (properties.type) {
-        case 'Shape':
-            if (properties.shape.toLowerCase() === 'box') {
+        case "Shape":
+            if (properties.shape.toLowerCase() === "box") {
                 entity = BABYLON.MeshBuilder.CreateBox(properties.name, {}, scene);
-            } else if (properties.shape.toLowerCase() === 'sphere') {
+            } else if (properties.shape.toLowerCase() === "sphere") {
                 entity = BABYLON.MeshBuilder.CreateSphere(properties.name, {}, scene);
-            } else if (properties.shape.toLowerCase() === 'cylinder') {
+            } else if (properties.shape.toLowerCase() === "cylinder") {
                 entity = BABYLON.MeshBuilder.CreateCylinder(properties.name, {}, scene);
-            } else if (properties.shape.toLowerCase() === 'cone') {
+            } else if (properties.shape.toLowerCase() === "cone") {
                 entity = BABYLON.MeshBuilder.CreateCylinder(properties.name, { diameterTop: 0 }, scene);
-            } else if (properties.shape.toLowerCase() === 'triangle') {
+            } else if (properties.shape.toLowerCase() === "triangle") {
                 entity = BABYLON.MeshBuilder.CreateCylinder(properties.name, { tessellation: 3 }, scene);
             } else {
-                Debug.error('ENTITIES', 'Failed to create shape entity, unknown/unsupported shape type: ' + properties.shape);
+                Debug.error("ENTITIES", "Failed to create shape entity, unknown/unsupported shape type: " + properties.shape);
                 return;
             }
             break;
-        case 'Model':
+        case "Model":
             entity = await this.importModel(properties.name, properties.modelUrl, scene);
             break;
         default:
@@ -83,15 +83,15 @@ export class Entities {
 
             // Apply a color if requested.
             if (properties.color) {
-                const colorMaterial = new BABYLON.StandardMaterial(properties.name + '-material', scene);
+                const colorMaterial = new BABYLON.StandardMaterial(properties.name + "-material", scene);
                 colorMaterial.emissiveColor = new BABYLON.Color3(properties.color.r, properties.color.g, properties.color.b);
                 entity.material = colorMaterial;
             }
 
-            Log.print('ENTITIES', 'INFO', 'Successfully created entity: ' + entity.id);
+            Log.print("ENTITIES", "INFO", "Successfully created entity: " + entity.id);
             return entity.id;
         } else {
-            Debug.error('ENTITIES', 'Failed to create entity.');
+            Debug.error("ENTITIES", "Failed to create entity.");
         }
     };
 
@@ -103,7 +103,7 @@ export class Entities {
         if (entityToDelete) {
             entityToDelete.dispose();
         } else {
-            Debug.error('ENTITIES', 'Failed to delete entity by ID: ' + id);
+            Debug.error("ENTITIES", "Failed to delete entity by ID: " + id);
         }
     };
 
@@ -115,7 +115,7 @@ export class Entities {
         if (entityToDelete) {
             entityToDelete.dispose();
         } else {
-            Debug.error('ENTITIES', 'Failed to delete entity by name: ' + name);
+            Debug.error("ENTITIES", "Failed to delete entity by name: " + name);
         }
     };
 };

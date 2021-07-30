@@ -10,42 +10,42 @@
 
 const Log = (function () {
     const types = {
-        'OTHER': {
-            'prefix': '[OTHER]'
+        "OTHER": {
+            "prefix": "[OTHER]"
         },
 
-        'ENTITIES': {
-            'prefix': '[ENTITIES]'
+        "ENTITIES": {
+            "prefix": "[ENTITIES]"
         },
 
-        'AUDIO': {
-            'prefix': '[AUDIO]'
+        "AUDIO": {
+            "prefix": "[AUDIO]"
         },
 
-        'METAVERSE': {
-            'prefix': '[METAVERSE]'
+        "METAVERSE": {
+            "prefix": "[METAVERSE]"
         },
 
-        'PEOPLE': {
-            'prefix': '[PEOPLE]'
+        "PEOPLE": {
+            "prefix": "[PEOPLE]"
         },
 
-        'PLACES': {
-            'prefix': '[PLACES]'
+        "PLACES": {
+            "prefix": "[PLACES]"
         }
     };
 
     const levels = {
-        'ERROR': {
-            'prefix': '[ERROR]'
+        "ERROR": {
+            "prefix": "[ERROR]"
         },
 
-        'WARN': {
-            'prefix': '[WARN]'
+        "WARN": {
+            "prefix": "[WARN]"
         },
 
-        'INFO': {
-            'prefix': '[INFO]'
+        "INFO": {
+            "prefix": "[INFO]"
         }
     };
 

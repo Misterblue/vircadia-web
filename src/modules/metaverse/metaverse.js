@@ -9,23 +9,23 @@
 */
 
 // System Modules
-const axios = require('axios');
+const axios = require("axios");
 // General Modules
-import Debug from '../debugging/debug.js';
-import Log from '../debugging/log.js';
+import Debug from "../debugging/debug.js";
+import Log from "../debugging/log.js";
 
 export class Metaverse {
     constructor (store, prop) {
         // #region Login & Registration
 
         this.commitLogin = (username, result) => {
-            Log.print('METAVERSE', 'INFO', 'Committing login.');
+            Log.print("METAVERSE", "INFO", "Committing login.");
 
-            const checkIsAdmin = result.account_roles.includes('admin');
+            const checkIsAdmin = result.account_roles.includes("admin");
 
-            store.commit('mutate', {
+            store.commit("mutate", {
                 update: true,
-                property: 'account',
+                property: "account",
                 with: {
                     isLoggedIn: true,
                     isAdmin: checkIsAdmin,
@@ -44,9 +44,9 @@ export class Metaverse {
         };
 
         this.logout = () => {
-            store.commit('mutate', {
+            store.commit("mutate", {
                 update: true,
-                property: 'account',
+                property: "account",
                 with: {
                     username: null,
                     isLoggedIn: false,
@@ -69,28 +69,28 @@ export class Metaverse {
 
         this.People = {
             retrieveAccount: (metaverse, userIdentifier) => {
-                const apiToRequest = (store.state.account.isLoggedIn ? 'account' : 'profile');
+                const apiToRequest = (store.state.account.isLoggedIn ? "account" : "profile");
 
                 return new Promise(function (resolve, reject) {
-                    axios.get(metaverse + '/api/v1/' + apiToRequest + '/' + userIdentifier, {
+                    axios.get(metaverse + "/api/v1/" + apiToRequest + "/" + userIdentifier, {
                         headers: {
                             // This function is called immediately after login, the accessToken is not applied to the headers yet.
                             // So, we wil do it manually.
-                            Authorization: 'Bearer ' + store.state.account.accessToken
+                            Authorization: "Bearer " + store.state.account.accessToken
                         },
                         params: {
-                            'asAdmin': store.state.account.useAsAdmin
+                            "asAdmin": store.state.account.useAsAdmin
                         }
                     })
                         .then((response) => {
-                            Log.print('PEOPLE', 'INFO', 'Retrieved info for ' + userIdentifier + '.');
+                            Log.print("PEOPLE", "INFO", "Retrieved info for " + userIdentifier + ".");
                             resolve(response.data);
                         }, (error) => {
-                            Debug.error('PEOPLE', 'Failed to retrieve info for ' + userIdentifier + '.');
+                            Debug.error("PEOPLE", "Failed to retrieve info for " + userIdentifier + ".");
                             if (error.response && error.response.data) {
                                 reject(error.response.data);
                             } else {
-                                reject('Unknown reason.');
+                                reject("Unknown reason.");
                             }
                         });
                 });
@@ -105,16 +105,16 @@ export class Metaverse {
             retrievePlaces: (metaverse) => {
                 return new Promise(function (resolve, reject) {
                     // TODO: Add query to params.
-                    axios.get(metaverse + '/api/v1/places')
+                    axios.get(metaverse + "/api/v1/places")
                         .then((response) => {
-                            Log.print('PLACES', 'INFO', 'Retrieved list of places.');
+                            Log.print("PLACES", "INFO", "Retrieved list of places.");
                             resolve(response.data);
                         }, (error) => {
-                            Debug.error('PLACES', 'Failed to retrieve list of places.');
+                            Debug.error("PLACES", "Failed to retrieve list of places.");
                             if (error.response && error.response.data) {
                                 reject(error.response.data);
                             } else {
-                                reject('Unknown reason.');
+                                reject("Unknown reason.");
                             }
                         });
                 });
@@ -127,49 +127,49 @@ export class Metaverse {
     // #region Login & Registration
 
     login (metaverse, username, password) {
-        Log.print('METAVERSE', 'INFO', 'Attempting to login as ' + username + '.');
+        Log.print("METAVERSE", "INFO", "Attempting to login as " + username + ".");
 
         return new Promise(function (resolve, reject) {
-            axios.post(metaverse + '/oauth/token', {
-                grant_type: 'password',
-                scope: 'owner', // as opposed to 'domain', we're asking for a user token
+            axios.post(metaverse + "/oauth/token", {
+                grant_type: "password",
+                scope: "owner", // as opposed to "domain", we"re asking for a user token
                 username: username,
                 password: password
             })
                 .then((response) => {
-                    Log.print('METAVERSE', 'INFO', 'Successfully got key and details for ' + username + ' from the Metaverse.');
+                    Log.print("METAVERSE", "INFO", "Successfully got key and details for " + username + " from the Metaverse.");
                     resolve(response.data);
                 }, (error) => {
-                    Debug.error('METAVERSE', 'Failed to login as ' + username + ': ' + JSON.stringify(error.response.data));
+                    Debug.error("METAVERSE", "Failed to login as " + username + ": " + JSON.stringify(error.response.data));
                     if (error.response && error.response.data) {
                         reject(error.response.data);
                     } else {
-                        reject('Unknown reason.');
+                        reject("Unknown reason.");
                     }
                 });
         });
     };
 
     register (metaverse, username, email, password) {
-        Log.print('METAVERSE', 'INFO', 'Attempting to register as ' + username + '.');
+        Log.print("METAVERSE", "INFO", "Attempting to register as " + username + ".");
 
         return new Promise(function (resolve, reject) {
-            axios.post(metaverse + '/api/v1/users', {
+            axios.post(metaverse + "/api/v1/users", {
                 user: {
-                    'username': username,
-                    'email': email,
-                    'password': password
+                    "username": username,
+                    "email": email,
+                    "password": password
                 }
             })
                 .then((response) => {
-                    Log.print('METAVERSE', 'INFO', 'Registered successfully as ' + username + '.');
+                    Log.print("METAVERSE", "INFO", "Registered successfully as " + username + ".");
                     resolve(response.data);
                 }, (error) => {
-                    Debug.error('METAVERSE', 'Registration as ' + username + ' failed: ' + JSON.stringify(error.response.data));
+                    Debug.error("METAVERSE", "Registration as " + username + " failed: " + JSON.stringify(error.response.data));
                     if (error.response && error.response.data) {
                         reject(error.response.data);
                     } else {
-                        reject('Unknown reason.');
+                        reject("Unknown reason.");
                     }
                 });
         });
