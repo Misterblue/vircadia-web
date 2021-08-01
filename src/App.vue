@@ -11,78 +11,78 @@
 <template>
     <router-view />
 </template>
-<script>
-import { defineComponent } from 'vue';
+<script lang="ts">
+import { defineComponent } from "vue";
 
 // Modules
-import { AudioInput } from './modules/audio/input/AudioInput.js';
-import { Metaverse } from './modules/metaverse/metaverse.js';
-import { Entities } from './modules/entities/entities.js';
-import { Explore } from './modules/explore/explore.js';
+import { AudioInput } from "@Modules/audio/input/AudioInput";
+import { Metaverse } from "@Modules/metaverse/metaverse";
+import { Entities } from "@Modules/entities/entities";
+import { Explore } from "@Modules/explore/explore";
 
 export default defineComponent({
-    name: 'App',
+    name: "App",
 
     methods: {
         // Bootstrapping
         mountClasses: function () {
-            this.$store.commit('mutate', {
-                property: 'Audio',
+            this.$store.commit("mutate", {
+                property: "Audio",
                 update: true,
                 with: {
-                    input: new AudioInput(this.$store, 'Audio.input')
+                    input: new AudioInput(this.$store, "Audio.input")
                 }
             });
 
-            this.$store.commit('mutate', {
-                property: 'Metaverse',
+            this.$store.commit("mutate", {
+                property: "Metaverse",
                 update: false,
-                with: new Metaverse(this.$store, 'Metaverse')
+                with: new Metaverse(this.$store, "Metaverse")
             });
 
-            this.$store.commit('mutate', {
-                property: 'Entities',
+            this.$store.commit("mutate", {
+                property: "Entities",
                 update: false,
-                with: new Entities(this.$store, 'Entities')
+                with: new Entities(this.$store, "Entities")
             });
 
-            this.$store.commit('mutate', {
-                property: 'Explore',
+            this.$store.commit("mutate", {
+                property: "Explore",
                 update: false,
-                with: new Explore(this.$store, 'Explore')
+                with: new Explore(this.$store, "Explore")
             });
         }
     },
 
     computed: {
-        updateAccountSession () {
+        updateAccountSession(): string {
             return this.$store.state.account;
         },
-        updatePlacesSettings () {
+        updatePlacesSettings() {
             return this.$store.state.places;
         },
-        updateAccessToken () {
+        updateAccessToken() {
             return this.$store.state.account.accessToken;
         },
-        metaverseServerChanged () {
+        metaverseServerChanged() {
             return this.$store.state.metaverseConfig.server;
         },
         dashboardConfigStore: {
-            get () {
+            get() {
                 return this.$store.state.dashboardConfig;
             },
-            set (value) {
-                this.$store.commit('mutate', {
+            set(value) {
+                this.$store.commit("mutate", {
                     update: true,
-                    property: 'dashboardConfig',
+                    property: "dashboardConfig",
                     with: value
                 });
             }
         },
-        getDashboardTheme () {
+        getDashboardTheme(): string {
             return this.$store.state.dashboardConfig.dashboardTheme;
         },
-        isLoggedIn () {
+        isLoggedIn(): boolean {
             return this.$store.state.account.isLoggedIn;
         }
     },
@@ -123,12 +123,12 @@ export default defineComponent({
         },
 
         updateAccessToken () {
-            console.info('Setting new access token header...');
+            console.info("Setting new access token header...");
             this.initializeAxios();
         },
 
         metaverseServerChanged (newMetaverseServer) {
-            localStorage.setItem('metaverseConfig.server', newMetaverseServer);
+            localStorage.setItem("metaverseConfig.server", newMetaverseServer);
 
             this.retrieveMetaverseConfig(newMetaverseServer);
 
@@ -143,14 +143,14 @@ export default defineComponent({
                     this.$store.state.account.metaverseServer,
                     this.$store.state.account.username
                 ).then(result => {
-                    this.$store.commit('mutate', {
+                    this.$store.commit("mutate", {
                         update: true,
-                        property: 'account',
+                        property: "account",
                         with: {
-                            'images': {
-                                'hero': result.data.account.images.hero,
-                                'tiny': result.data.account.images.tiny,
-                                'thumbnail': result.data.account.images.thumbnail
+                            "images": {
+                                "hero": result.data.account.images.hero,
+                                "tiny": result.data.account.images.tiny,
+                                "thumbnail": result.data.account.images.thumbnail
                             }
                         }
                     });

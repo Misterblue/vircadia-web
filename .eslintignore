@@ -2,3 +2,10 @@
 /docs
 /jsdoc
 /node_modules
+/src-bex/www
+/src-capacitor
+/src-cordova
+/src-ssr
+/.quasar
+.eslintrc.js
+babel.config.js
