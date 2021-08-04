@@ -385,6 +385,22 @@ module.exports = {
         // Rules extra or exceptions to those in plugin:jest/recommended and plugin:jest/style.
         // https://www.npmjs.com/package/eslint-plugin-jest
         // TODO: Review rules.
-        "jest/no-done-callback": "off"
+        "jest/no-done-callback": "off",
+
+        // BEGIN DEBUG DEBUG
+        // Turn off 'any' errors in process of doing JS to TS conversion
+        "@typescript-eslint/no-unsafe-call": "off",
+        "@typescript-eslint/no-unused-vars": "off",
+        "@typescript-eslint/no-unsafe-member-access": "off",
+        "@typescript-eslint/no-unsafe-assignment": "off",
+        "@typescript-eslint/restrict-plus-operands": "off",
+        "@typescript-eslint/no-empty-function": "off",
+        "@typescript-eslint/no-unsafe-return": "off",
+        "@typescript-eslint/require-await": "off",
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/no-floating-promises": "off",
+        "@typescript-eslint/no-this-alias": "off"
+        // END DEBUG DEBUG
+
     }
 }

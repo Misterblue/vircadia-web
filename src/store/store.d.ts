@@ -4,16 +4,17 @@
 
 // vuex.d.ts
 import { Store } from "vuex";
+import { State } from "./State";
 
 declare module "@vue/runtime-core" {
-    // declare your own store states
-    interface State {
-        count: number,
-        account: string
-    }
-
     // provide typings for this.$store
     interface ComponentCustomProperties {
         $store: Store<State>
+
+        // mixins added by primary.ts
+        checkNeedsTokenRefresh: () => boolean,
+        attemptRefreshToken: () => Promise<void>,
+        parseFromStorage: (string) => KeyedCollection,
+        initializeAxios: () => void
     }
 }

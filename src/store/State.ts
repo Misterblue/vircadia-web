@@ -1,11 +1,16 @@
 import packageInfo from "../../package.json";
 
-import { AccountState} from "./AccountState";
+import { AccountState } from "./AccountState";
+import { MetaverseState } from "./MetaverseState";
 
 // NOTE NOTE NOTE
-// THis is a temporary definition with a bunch of KeyedCollection filler to get things to compile.
+// This is a temporary definition with a bunch of KeyedCollection filler to get things to compile.
 // Definitions are necessary for the the individual section definitions.
 // TODO: Fix the global state definition
+
+export class DashboardConfig {
+    public dashboardTheme = 2;
+}
 
 export class State {
     public globalConsts: KeyedCollection = {
@@ -14,14 +19,7 @@ export class State {
         SAFETY_BEFORE_SESSION_TIMEOUT: 21600 // If a token has 6 or less hours left on its life, refresh it.
     };
 
-    public metaverseConfig: KeyedCollection = {
-        name: "",
-        nickname: "",
-        // "server" needs to at least be pre-filled in order to get all other config information.
-        server: "https://metaverse.vircadia.com/live",
-        iceServer: "",
-        serverVersion: ""
-    };
+    public metaverseConfig: MetaverseState = new MetaverseState();
 
     public account: AccountState = new AccountState();
 
@@ -44,9 +42,7 @@ export class State {
         full: ""
     };
 
-    public dashboardConfig: KeyedCollection = {
-        dashboardTheme: 2 // int
-    };
+    public dashboardConfig: DashboardConfig = new DashboardConfig();
 
     public debugging: KeyedCollection = {};
     public notifications: KeyedCollection = {};

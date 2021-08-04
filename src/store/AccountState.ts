@@ -8,13 +8,17 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 */
 
+import { MetaverseState } from "./MetaverseState";
+/* jsdoc
+ * Holds the state of a known account.
+ */
 export class AccountState {
     public isLoggedIn = false;
     public isAdmin = false;
     public username = "";
     public accountRoles: string[] = [];
     public accountId = "";
-    // public metaverseServer: Nullable<MetaverseState> = undefined;
+    public metaverseServer: Nullable<MetaverseState> = undefined;
     // Token data
     public accessToken: Nullable<string> = undefined;
     public refreshToken: Nullable<string> = undefined;

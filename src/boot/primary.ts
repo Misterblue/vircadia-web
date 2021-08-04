@@ -10,18 +10,23 @@ import { boot } from "quasar/wrappers";
 
 import Log from "../modules/debugging/log.js";
 
-const axios = require("axios");
+import axios from "axios";
+
+// import { Store } from "vuex";
 
 // more info on params: https://v2.quasar.dev/quasar-cli/boot-files
-export default boot(({ app, store, router, Vue }) => {
+export default boot(({ app, router, store }) => {
     // MAIN APPLICATION INITIALIZATION
 
-    function initializeAxios () {
+    function initializeAxios() {
         Log.print("OTHER", "INFO", "Bootstrapping Axios.");
 
-        axios.defaults.headers.common = {
+        // Set the default headers to include the request for HTTP error types
+        //     for requests errors and to send our authorization token.
+        // TODO: when does account accessToken change? refresh?
+        (axios.defaults.headers as KeyedCollection)["common"] = {
             "x-vircadia-error-handle": "badrequest",
-            "Authorization": "Bearer " + store.state.account.accessToken
+            "Authorization": "Bearer " + store.state.account.accessToken,
         };
     }
 
@@ -29,15 +34,18 @@ export default boot(({ app, store, router, Vue }) => {
 
     // GLOBAL FUNCTIONS
 
-    function checkNeedsTokenRefresh () {
+    function checkNeedsTokenRefresh() {
         const currentTimestamp = Math.floor(new Date().getTime() / 1000); // in seconds
         const sessionExpirationTime = parseInt(store.state.account.createdAt) + parseInt(store.state.account.expiresIn);
 
-        // console.info("createdAt", Object.prototype.toString.call(store.state.account.createdAt), "expiresIn", Object.prototype.toString.call(store.state.account.expiresIn))
-        // console.info("currentTimestamp", currentTimestamp, Object.prototype.toString.call(currentTimestamp))
-        // console.info("sessionExpirationTime", sessionExpirationTime, Object.prototype.toString.call(sessionExpirationTime))
+        // console.info("createdAt",
+        //        Object.prototype.toString.call(store.state.account.createdAt),
+        //        "expiresIn", Object.prototype.toString.call(store.state.account.expiresIn));
+        // console.info("currentTimestamp", currentTimestamp, Object.prototype.toString.call(currentTimestamp));
+        // console.info("sessionExpirationTime", sessionExpirationTime, Object.prototype.toString.call(sessionExpirationTime));
 
-        return (currentTimestamp > sessionExpirationTime || (currentTimestamp - store.state.globalConsts.SAFETY_BEFORE_SESSION_TIMEOUT) > sessionExpirationTime);
+        return (currentTimestamp > sessionExpirationTime
+            || (currentTimestamp - store.state.globalConsts.SAFETY_BEFORE_SESSION_TIMEOUT) > sessionExpirationTime);
     }
 
     function attemptRefreshToken () {

@@ -15,10 +15,12 @@
 import { defineComponent } from "vue";
 
 // Modules
-import { AudioInput } from "@Modules/audio/input/AudioInput";
-import { Metaverse } from "@Modules/metaverse/metaverse";
-import { Entities } from "@Modules/entities/entities";
-import { Explore } from "@Modules/explore/explore";
+import { AudioInput } from "./modules/audio/input/AudioInput";
+import { Metaverse } from "./modules/metaverse/metaverse";
+import { Entities } from "./modules/entities/entities";
+import { Explore } from "./modules/explore/explore";
+
+import { AccountState } from "./store/AccountState";
 
 export default defineComponent({
     name: "App",
@@ -55,23 +57,23 @@ export default defineComponent({
     },
 
     computed: {
-        updateAccountSession(): string {
+        updateAccountSession(): AccountState {
             return this.$store.state.account;
         },
-        updatePlacesSettings() {
-            return this.$store.state.places;
-        },
-        updateAccessToken() {
+        // updatePlacesSettings() {
+        //     return this.$store.state.places;
+        // },
+        updateAccessToken(): Nullable<string> {
             return this.$store.state.account.accessToken;
         },
-        metaverseServerChanged() {
-            return this.$store.state.metaverseConfig.server;
-        },
+        // metaverseServerChanged(): string {
+        //    return this.$store.state.metaverseConfig["server"];
+        // },
         dashboardConfigStore: {
             get() {
                 return this.$store.state.dashboardConfig;
             },
-            set(value) {
+            set(value: string) {
                 this.$store.commit("mutate", {
                     update: true,
                     property: "dashboardConfig",
@@ -79,7 +81,7 @@ export default defineComponent({
                 });
             }
         },
-        getDashboardTheme(): string {
+        getDashboardTheme(): number {
             return this.$store.state.dashboardConfig.dashboardTheme;
         },
         isLoggedIn(): boolean {
@@ -90,10 +92,10 @@ export default defineComponent({
     watch: {
         // Save the state of the session to storage for retrieval if the user leaves and comes back.
         updateAccountSession: {
-            handler: function (newVal) {
+            handler: function (newVal: KeyValue) {
                 for (const item in newVal) {
                     if (newVal[item] !== null) {
-                        localStorage.setItem(item, newVal[item]);
+                        localStorage.setItem(item, newVal[item] as string);
                     }
                 }
             },
@@ -101,10 +103,10 @@ export default defineComponent({
         },
         // Save the settings for places.
         updatePlacesSettings: {
-            handler: function (newVal) {
+            handler: function (newVal: KeyValue) {
                 for (const item in newVal) {
                     if (newVal[item] !== null) {
-                        localStorage.setItem(item, newVal[item]);
+                        localStorage.setItem(item, newVal[item] as string);
                     }
                 }
             },
@@ -112,22 +114,22 @@ export default defineComponent({
         },
         // Save the settings for the dashboard.
         dashboardConfigStore: {
-            handler: function (newVal) {
+            handler: function (newVal: KeyValue) {
                 for (const item in newVal) {
                     if (newVal[item] !== null) {
-                        localStorage.setItem(item, newVal[item]);
+                        localStorage.setItem(item, newVal[item] as string);
                     }
                 }
             },
             deep: true
         },
 
-        updateAccessToken () {
+        updateAccessToken() {
             console.info("Setting new access token header...");
             this.initializeAxios();
         },
 
-        metaverseServerChanged (newMetaverseServer) {
+        metaverseServerChanged(newMetaverseServer) {
             localStorage.setItem("metaverseConfig.server", newMetaverseServer);
 
             this.retrieveMetaverseConfig(newMetaverseServer);
@@ -137,7 +139,7 @@ export default defineComponent({
             }
         },
 
-        isLoggedIn (newValue) {
+        isLoggedIn(newValue) {
             if (newValue) {
                 this.$store.state.Metaverse.People.retrieveAccount(
                     this.$store.state.account.metaverseServer,
