@@ -36,7 +36,7 @@
 
         <q-tab-panels v-model="tab" animated>
             <q-tab-panel name="metaverseLogin">
-                <MetaverseLogin @closeDialog="$emit('closeDialog')"></MetaverseLogin>
+                <MetaverseLogin @closeDialog="$emit("closeDialog")"></MetaverseLogin>
             </q-tab-panel>
 
             <q-tab-panel name="metaverseRegister">
@@ -47,13 +47,13 @@
 </template>
 
 <script>
-import MetaverseLogin from '../components/login/MetaverseLogin.vue';
-import MetaverseRegister from '../components/login/MetaverseRegister.vue';
+import MetaverseLogin from "../components/login/MetaverseLogin.vue";
+import MetaverseRegister from "../components/login/MetaverseRegister.vue";
 
 export default {
-    name: 'Login',
+    name: "Login",
 
-    emits: ['closeDialog'],
+    emits: ["closeDialog"],
 
     components: {
         MetaverseLogin,
@@ -61,12 +61,12 @@ export default {
     },
 
     data: () => ({
-        tab: 'metaverseLogin'
+        tab: "metaverseLogin"
     }),
 
     methods: {
-        onMetaverseRegister () {
-            this.tab = 'metaverseLogin';
+        onMetaverseRegister() {
+            this.tab = "metaverseLogin";
         }
     }
 };

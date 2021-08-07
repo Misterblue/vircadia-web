@@ -20,7 +20,7 @@ import { Metaverse } from "./modules/metaverse/metaverse";
 import { Entities } from "./modules/entities/entities";
 import { Explore } from "./modules/explore/explore";
 
-import { AccountState } from "./store/AccountState";
+import { AccountState } from "./store/AccountModule";
 
 export default defineComponent({
     name: "App",
@@ -144,7 +144,7 @@ export default defineComponent({
                 this.$store.state.Metaverse.People.retrieveAccount(
                     this.$store.state.account.metaverseServer,
                     this.$store.state.account.username
-                ).then(result => {
+                ).then((result) => {
                     this.$store.commit("mutate", {
                         update: true,
                         property: "account",

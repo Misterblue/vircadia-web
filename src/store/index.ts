@@ -8,9 +8,13 @@
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 */
 
+import Vue from "vue";
+import Vuex from "vuex"
+import { createStore } from "vuex";
+
 import { StateCondition } from "babylonjs/Actions/condition";
 import { store } from "quasar/wrappers";
-import { createStore } from "vuex";
+import packageInfo from "../../package.json";
 
 /*
 * If not building with SSR mode, you can
@@ -21,15 +25,56 @@ import { createStore } from "vuex";
 * with the Store instance.
 */
 
-import { State } from "./State";
-import { MutatePayload } from "./MutatePayload";
+import { AccountModule } from "./AccountModule";
+import { MetaverseState } from "./MetaverseState";
 
-export default store((/* { ssrContext } */) => {
-    const Store = createStore({
+export enum StateMutations {
+    STATE_MUTATE = "STATE_MUTATE"
+}
+// Payload passed to STATE_MUTATE
+export interface MutatePayload {
+    property: string,
+    update: boolean,
+    with: number | string | KeyedCollection
+}
+
+const stateState = {
+    globalConsts: {
+        APP_NAME: packageInfo.productName,
+        APP_VERSION: packageInfo.version,
+        SAFETY_BEFORE_SESSION_TIMEOUT: 21600 // If a token has 6 or less hours left on its life, refresh it.
+    },
+    debugging: {},
+    notifications: {},
+    renderer: {
+        canvases: [
+            {
+                canvas: null
+            }
+        ]
+    },
+    error: {
+        title: "",
+        code: "",
+        full: ""
+    },
+    location: {
+        current: "",
+        state: "Not Connected"
+    }
+};
+
+export type RootState = typeof stateState;
+
+export const rootStore = createStore<RootState>({
         modules: {
-            // example
+            account: AccountModule,
+            metaverse: MetaverseState,
+            dashboard: DashboardState,
+            dialog: DialogState,
+            audio: AudioState
         },
-        state: new State(),
+        state: stateState,
         mutations: {
             /* @jsdoc
              * Changes the value of state variable.
@@ -37,7 +82,7 @@ export default store((/* { ssrContext } */) => {
              * @param {MutatePlayload} - specification of the property to update. See
              *     MutatePayload for explanation of the fields.
              */
-            mutate(state: State, payload: MutatePayload) {
+            [StateMutations.STATE_MUTATE](state: RootState, payload: MutatePayload) {
                 // Create the target location to store the mutation
                 let target = state as unknown as KeyedCollection;
                 const segments = payload.property.split(".");
@@ -97,12 +142,11 @@ export default store((/* { ssrContext } */) => {
                 //     console.info("Payload:", payload.property, "with:", payload.with, "state is now:", this.state);
                 // }
             }
-        }
+        },
 
         // enable strict mode (adds overhead!)
         // for dev mode and --debug builds only
-        // TS error says 'strict' is not a member of this structure
-        // strict: process.env["DEBUGGING"]
+        strict: process.env["DEBUGGING"] !== "true"
     });
 
     return Store;

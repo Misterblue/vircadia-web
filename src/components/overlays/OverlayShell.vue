@@ -91,8 +91,12 @@
 
                 <div class="col full-height" @mousedown="canMove && beginAction($event, 'move')" />
 
-                <q-btn dense flat :icon="overlayStatus === 'minimized' ? 'flip_to_front' : 'minimize'" @click="$emit('overlay-action', 'minimize')" />
-                <q-btn dense flat :icon="overlayStatus === 'maximized' ? 'flip_to_front' : 'crop_square'" @click="$emit('overlay-action', 'maximize')" />
+                <q-btn dense flat
+                    :icon="overlayStatus === 'minimized' ? 'flip_to_front' : 'minimize'"
+                    @click="$emit('overlay-action', 'minimize')" />
+                <q-btn dense flat
+                    :icon="overlayStatus === 'maximized' ? 'flip_to_front' : 'crop_square'"
+                    @click="$emit('overlay-action', 'maximize')" />
                 <q-btn dense flat icon="close" @click="$emit('overlay-action', 'close')" />
             </q-bar>
         </q-slide-transition>
@@ -105,14 +109,23 @@
             <slot />
         </q-card-section>
 
-        <div v-if="canResize && canResizeHeight" class="resize resize-top" @mousedown="beginAction($event, 'resize-top')" />
-        <div v-if="canResize && canResizeHeight" class="resize resize-bottom" @mousedown="beginAction($event, 'resize-bottom')" />
+        <div v-if="canResize && canResizeHeight"
+            class="resize resize-top"
+            @mousedown="beginAction($event, 'resize-top')" />
+        <div v-if="canResize && canResizeHeight"
+            class="resize resize-bottom"
+            @mousedown="beginAction($event, 'resize-bottom')" />
         <div v-if="canResize && canResizeWidth" class="resize resize-left" @mousedown="beginAction($event, 'resize-left')" />
         <div v-if="canResize && canResizeWidth" class="resize resize-right" @mousedown="beginAction($event, 'resize-right')" />
-        <div v-if="canResize && canResizeWidth && canResizeWidth" class="resize resize-nw" @mousedown="beginAction($event, 'resize-nw')" />
-        <div v-if="canResize && canResizeWidth && canResizeWidth" class="resize resize-ne" @mousedown="beginAction($event, 'resize-ne')" />
-        <div v-if="canResize && canResizeWidth && canResizeWidth" class="resize resize-sw" @mousedown="beginAction($event, 'resize-sw')" />
-        <div v-if="canResize && canResizeWidth && canResizeWidth" class="resize resize-se" @mousedown="beginAction($event, 'resize-se')" />
+        <div v-if="canResize && canResizeWidth && canResizeWidth"
+            class="resize resize-nw"
+            @mousedown="beginAction($event, 'resize-nw')" />
+        <div v-if="canResize && canResizeWidth && canResizeWidth"
+            class="resize resize-ne" @mousedown="beginAction($event, 'resize-ne')" />
+        <div v-if="canResize && canResizeWidth && canResizeWidth"
+            class="resize resize-sw" @mousedown="beginAction($event, 'resize-sw')" />
+        <div v-if="canResize && canResizeWidth && canResizeWidth"
+            class="resize resize-se" @mousedown="beginAction($event, 'resize-se')" />
     </q-card>
 </template>
 
@@ -145,7 +158,7 @@ export default {
         // parentSize: { type: Object, required: true }
     },
 
-    data () {
+    data() {
         return {
             // Settings and Properties
             height: this.defaultHeight,
@@ -153,7 +166,7 @@ export default {
             top: this.defaultTop,
             left: this.defaultLeft,
             // Internal
-            overlayStatus: 'restored',
+            overlayStatus: "restored",
             hovered: false,
             dragAction: undefined,
             dragStart: undefined,
@@ -163,82 +176,90 @@ export default {
     },
 
     watch: {
-        mouseCaptured (newVal) {
+        mouseCaptured(newVal) {
             if (newVal) {
-                document.addEventListener('mousemove', this.onDragMove, true);
-                document.addEventListener('mouseup', this.onDragDone, true);
+                document.addEventListener("mousemove", this.onDragMove, true);
+                document.addEventListener("mouseup", this.onDragDone, true);
             } else {
-                document.removeEventListener('mousemove', this.onDragMove, true);
-                document.removeEventListener('mouseup', this.onDragDone, true);
+                document.removeEventListener("mousemove", this.onDragMove, true);
+                document.removeEventListener("mouseup", this.onDragDone, true);
             }
         },
 
-        'managerProps.overlayStatus' (newVal) {
-            console.info('newVal', newVal);
+        "managerProps.overlayStatus"(newVal) {
+            console.info("newVal", newVal);
             this.overlayStatus = newVal;
         }
     },
 
     methods: {
-        dragBehavior (action) {
+        dragBehavior(action) {
             let top = 0;
             let left = 0;
             let width = 0;
             let height = 0;
 
             switch (action) {
-            case 'move':
-                top = +1;
-                left = +1;
-                break;
-            case 'resize-top':
-                top = +1;
-                height = -1;
-                break;
-            case 'resize-bottom':
-                height = +1;
-                break;
-            case 'resize-left':
-                left = +1;
-                width = -1;
-                break;
-            case 'resize-right':
-                width = +1;
-                break;
-            case 'resize-nw':
-                top = +1;
-                left = +1;
-                height = -1;
-                width = -1;
-                break;
-            case 'resize-ne':
-                top = +1;
-                height = -1;
-                width = +1;
-                break;
-            case 'resize-sw':
-                left = +1;
-                width = -1;
-                height = +1;
-                break;
-            case 'resize-se':
-                height = +1;
-                width = +1;
-                break;
+                case "move":
+                    top = +1;
+                    left = +1;
+                    break;
+                case "resize-top":
+                    top = +1;
+                    height = -1;
+                    break;
+                case "resize-bottom":
+                    height = +1;
+                    break;
+                case "resize-left":
+                    left = +1;
+                    width = -1;
+                    break;
+                case "resize-right":
+                    width = +1;
+                    break;
+                case "resize-nw":
+                    top = +1;
+                    left = +1;
+                    height = -1;
+                    width = -1;
+                    break;
+                case "resize-ne":
+                    top = +1;
+                    height = -1;
+                    width = +1;
+                    break;
+                case "resize-sw":
+                    left = +1;
+                    width = -1;
+                    height = +1;
+                    break;
+                case "resize-se":
+                    height = +1;
+                    width = +1;
+                    break;
+                default:
+                    break;
             }
 
-            return { top: top, left: left, width: width, height: height };
+            // eslint-disable-next-line object-shorthand
+            return { "top": top, "left": left, "width": width, "height": height };
         },
 
-        beginAction (event, action) {
-            if (this.dragAction) return;
+        beginAction(event, action) {
+            if (this.dragAction) {
+                return;
+            }
             this.dragAction = action;
             this.dragStart = { x: event.screenX, y: event.screenY };
             this.mouseCaptured = true;
         },
 
-        applyDrag (pageX, pageY) {
-            if (!this.dragAction || !this.dragStart) return; // shouldn't be here, get out now
+        applyDrag(pageX, pageY) {
+            if (!this.dragAction || !this.dragStart) {
+                // shouldn"t be here, get out now
+                return;
+            }
             const behavior = this.dragBehavior(this.dragAction);
             let offsetX = pageX - this.dragStart.x;
             let offsetY = pageY - this.dragStart.y;
@@ -271,7 +292,7 @@ export default {
             this.dragStart = { x: pageX, y: pageY };
         },
 
-        onDragMove (event) {
+        onDragMove(event) {
             if (this.onDragMoveReady) {
                 this.applyDrag(event.screenX, event.screenY);
                 this.onDragMoveReady = false;
@@ -284,7 +305,7 @@ export default {
             event.stopPropagation();
         },
 
-        onDragDone (event) {
+        onDragDone(event) {
             this.applyDrag(event.screenX, event.screenY);
             this.mouseCaptured = false;
             this.dragAction = undefined;
@@ -295,10 +316,10 @@ export default {
         }
     },
 
-    unmounted () {
+    unmounted() {
         if (this.mouseCaptured) {
-            document.removeEventListener('mousemove', this.onDragMove, true);
-            document.removeEventListener('mouseup', this.onDragDone, true);
+            document.removeEventListener("mousemove", this.onDragMove, true);
+            document.removeEventListener("mouseup", this.onDragDone, true);
         }
     }
 };

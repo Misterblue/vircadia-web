@@ -16,7 +16,7 @@
 
 <script>
 export default {
-    name: 'OverlayManager',
+    name: "OverlayManager",
 
     props: {
         // Primary
@@ -28,7 +28,7 @@ export default {
     }),
 
     methods: {
-        getOverlayIndex (overlayName) {
+        getOverlayIndex(overlayName) {
             for (let i = 0; i < this.overlays.length; i++) {
                 if (this.overlays[i].name === overlayName) {
                     return i;
@@ -38,38 +38,38 @@ export default {
             return -1;
         },
 
-        onAction (overlay, action) {
+        onAction(overlay, action) {
             const index = this.getOverlayIndex(overlay);
 
             switch (action) {
-            case 'select': {
-                const splice = this.overlays.splice(index, 1)[0];
-                this.overlays.push(splice);
-                break;
-            }
-            case 'minimize':
-                this.overlays[index].overlayStatus = 'minimized';
-                break;
-            case 'close':
-                this.overlays.splice(index, 1);
-                break;
-            default:
-                window.alert('Action not supported: ' + action);
-                break;
+                case "select": {
+                    const splice = this.overlays.splice(index, 1)[0];
+                    this.overlays.push(splice);
+                    break;
+                }
+                case "minimize":
+                    this.overlays[index].overlayStatus = "minimized";
+                    break;
+                case "close":
+                    this.overlays.splice(index, 1);
+                    break;
+                default:
+                    window.alert("Action not supported: " + action);
+                    break;
             }
         },
 
-        openOverlay (overlay) {
+        openOverlay(overlay) {
             const index = this.getOverlayIndex(overlay);
 
             if (index >= 0) {
                 const splice = this.overlays.splice(index, 1)[0];
-                splice.overlayStatus = 'restored';
+                splice.overlayStatus = "restored";
                 this.overlays.push(splice);
             } else {
                 this.overlays.push({
-                    'name': overlay,
-                    'overlayStatus': 'restored'
+                    "name": overlay,
+                    "overlayStatus": "restored"
                 });
             }
         }
