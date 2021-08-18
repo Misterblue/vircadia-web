@@ -2,6 +2,7 @@ import { store } from "quasar/wrappers";
 import Vue, { InjectionKey } from "vue";
 import Vuex, {
     createStore,
+    Module,
     StoreOptions,
     Store as VuexStore,
     useStore as vuexUseStore
@@ -9,7 +10,10 @@ import Vuex, {
 
 import packageInfo from "../../package.json";
 
-import AccountState from "./account";
+import {
+    AccountState,
+    IAccountState
+} from "./account";
 
 // import example from "./module-example"
 // import { ExampleStateInterface } from "./module-example/state";
@@ -32,7 +36,7 @@ declare module "@vue/runtime-core" {
 }
 */
 
-export interface IRootState {
+interface IRootStateBase {
     globalConsts: {
         APP_NAME: string,
         APP_VERSION: string,
@@ -58,8 +62,14 @@ export interface IRootState {
     }
 }
 
+interface IModules {
+    account: Module<IAccountState, IRootState>
+}
+
+export type IRootState = IModules & IRootStateBase;
+
 export default store(function (/* { ssrContext } */) {
-    const Store = createStore<IRootState>({
+    const Store = createStore<IRootStateBase>({
         state: () => ({
             globalConsts: {
                 APP_NAME: packageInfo.productName,
@@ -93,7 +103,7 @@ export default store(function (/* { ssrContext } */) {
         strict: Boolean(process.env.DEBUGGING)
     });
 
-    return Store;
+    return Store as VuexStore<IRootState>;
 });
 
 // provide typings for `useStore` helper

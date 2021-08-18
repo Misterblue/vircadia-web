@@ -39,12 +39,10 @@ const mutations: MutationTree<IAccountState> = {
     }
 };
 
-const AccountState: Module<IAccountState, IRootState> = {
+export const AccountState: Module<IAccountState, IRootState> = {
     namespaced: true,
     state,
     actions,
     getters,
     mutations
 };
-
-export default AccountState;
