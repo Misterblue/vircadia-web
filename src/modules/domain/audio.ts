@@ -25,6 +25,7 @@ export class DomainAudio extends Client {
 
     #_domain: Domain;
     #_audioMixer: Nullable<AudioMixer>;
+
     public get Mixer(): Nullable<AudioMixer> { return this.#_audioMixer; }
 
     constructor(pD: Domain) {
@@ -32,6 +33,7 @@ export class DomainAudio extends Client {
         this.#_domain = pD;
         this.onStateChange = new SignalEmitter();
         this.#_audioMixer = new AudioMixer(pD.ContextId);
+        // In 'quasar.conf.js' the worklet files from the SDK are copied into the 'js' directory
         this.#_audioMixer.audioWorkletRelativePath = "./js/";
         this.#_audioMixer.onStateChanged = this._handleOnStateChanged.bind(this);
     }
@@ -41,21 +43,34 @@ export class DomainAudio extends Client {
 
     private _handleOnStateChanged(pNewState: AssignmentClientState): void {
         Log.debug(Log.types.AUDIO, `DomainAudio: state change = ${DomainAudio.stateToString(pNewState)}`);
+        // Log.debug(Log.types.AUDIO, `       typeof audioOutput = ${typeof this.#_audioMixer?.audioOutput}`);
         this.onStateChange.emit(this.#_domain, this, pNewState);
     }
 
-    getDomainAudioStream(): Nullable<MediaStream> {
-        if (this.#_audioMixer) {
-            return this.#_audioMixer.audioOuput;
-        }
-        return undefined;
+    public getDomainAudioStream(): Nullable<MediaStream> {
+        const mixer = this.#_audioMixer;
+        const outputStream = mixer?.audioOutput;
+        Log.debug(Log.types.AUDIO, `DomainAudio.getDomainAudioStream: mixer: ${typeof mixer}, stream: ${typeof outputStream}`);
+        return outputStream;
     }
 
-    play(): void {
+    public get mute(): boolean {
+        return this.#_audioMixer?.inputMuted ?? true;
+    }
+
+    public set mute(pMute: boolean) {
+        if (this.#_audioMixer) {
+            this.#_audioMixer.inputMuted = pMute;
+        }
+    }
+
+    public play(): void {
+        Log.debug(Log.types.AUDIO, `DomainAudio.play()`);
         this.#_audioMixer?.play();
     }
 
-    pause(): void {
+    public pause(): void {
+        Log.debug(Log.types.AUDIO, `DomainAudio.pause()`);
         this.#_audioMixer?.pause();
     }
 }

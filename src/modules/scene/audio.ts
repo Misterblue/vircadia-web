@@ -14,6 +14,8 @@ import { Config, USER_AUDIO_INPUT, USER_AUDIO_OUTPUT } from "@Base/config";
 import Log from "@Modules/debugging/log";
 import { DomainAudio } from "../domain/audio";
 
+// Signature of function called when the output stream is set or changes.
+// Usually used to set the stream into an <audio> element for output.
 export type SetAudioOutputCallback = (pStream: Nullable<MediaStream>) => void;
 
 /**
@@ -51,18 +53,39 @@ export const AudioMgr = {
     // eslint-disable-next-line @typescript-eslint/require-await
     async initialize(pAudioOuter: SetAudioOutputCallback): Promise<void> {
         Log.debug(Log.types.AUDIO, `AudioMgr.initialize()`);
-        this._setAudioOutputFunction = pAudioOuter;
+        AudioMgr._setAudioOutputFunction = pAudioOuter;
 
         // Get the available input and output devices and put in $store
-        await this.getAvailableInputOutputDevices();
+        await AudioMgr.getAvailableInputOutputDevices();
 
         // Listen for the domain to connect and disconnect
         // eslint-disable-next-line @typescript-eslint/unbound-method
-        DomainMgr.onActiveDomainStateChange.connect(AudioMgr._handleActiveDomainStateChange);
+        DomainMgr.onActiveDomainStateChange.connect(AudioMgr._handleActiveDomainStateChange.bind(this));
 
         // See if device selection was saved otherwise setup some default audio devices
         await AudioMgr.setInitialInputAudioDevice();
         await AudioMgr.setInitialOutputAudioDevice();
+    },
+
+    /**
+     * Set audio muting to the passed value or, if nothing passed, complement muting.
+     * This sets the muting for the input mic as well as muting the output stream.
+     * @param pMute 'true' if to mute. If not supplied, current mute state is complemented
+     * @returns new mute state
+     */
+    muteAudio(pMute?: boolean): boolean {
+        const newMute = pMute ?? !Store.state.audio.user.muted;
+        Log.debug(Log.types.AUDIO, `AudioMgr.muteAudio: newMute = ${newMute ? "true" : "false"}`);
+        if (Store.state.audio.user.muted !== newMute) {
+            // eslint-disable-next-line no-void
+            void Store.commit(StoreMutations.MUTATE, {
+                property: "audio.user.muted",
+                value: newMute
+            });
+            AudioMgr.setDomainAudioMuted(newMute);
+            AudioMgr.setUserAudioMuted(newMute);
+        }
+        return newMute;
     },
 
     /**
@@ -77,60 +100,100 @@ export const AudioMgr = {
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _handleActiveDomainStateChange(pDomain: Domain, pState: ConnectionState, pInfo: string): void {
-        if (pState === ConnectionState.CONNECTED) {
-            Log.debug(Log.types.AUDIO, `AudioMgr._handleActiveDomainStateChange: CONNECTED`);
-            // Domain is connected. Connect the inputs to the outputs
-            if (pDomain.AudioClient) {
-                // setup to wait for the audio device to get connected
-                // eslint-disable-next-line @typescript-eslint/unbound-method
-                pDomain.AudioClient.onStateChange.connect(AudioMgr._handleAudioStateChange);
-                // but, if already connected, connect the audio end points
-                if (pDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
-                    AudioMgr._connectInputStreamsToOutputStreams(pDomain);
+        (async () => {
+            if (pState === ConnectionState.CONNECTED) {
+                Log.debug(Log.types.AUDIO, `AudioMgr._handleActiveDomainStateChange: CONNECTED`);
+                // Domain is connected. Connect the inputs to the outputs
+                if (pDomain.AudioClient) {
+                    // setup to wait for the audio device to get connected
+                    // eslint-disable-next-line @typescript-eslint/unbound-method
+                    pDomain.AudioClient.onStateChange.connect(AudioMgr._handleDomainAudioStateChange.bind(this));
+                    // but, if already connected, connect the audio end points
+                    if (pDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
+                        await AudioMgr._setupDomainAudio(pDomain);
+                    }
                 }
+            } else {
+                Log.debug(Log.types.AUDIO, `AudioMgr._handleActiveDomainStateChange: ${Domain.stateToString(pState)}`);
+                if (AudioMgr._setAudioOutputFunction) {
+                    AudioMgr._setAudioOutputFunction(undefined);
+                }
+                // The domain is not connected. If anything is connected, disconnect it
+                // TODO:
             }
-        } else {
-            Log.debug(Log.types.AUDIO, `AudioMgr._handleActiveDomainStateChange: DISCONNECTED`);
-            if (AudioMgr._setAudioOutputFunction) {
-                AudioMgr._setAudioOutputFunction(undefined);
-            }
-            // The domain is not connected. If anything is connected, disconnect it
-            // TODO:
-        }
+        })();
     },
 
     // The audio mixer state changed. If connected, try to connect inputs and outputs.
-    _handleAudioStateChange(pDomain: Domain, pAudio: DomainAudio, pState: AssignmentClientState): void {
-        Log.debug(Log.types.AUDIO, `AudioMgr._handleAudioStateChange: ${DomainAudio.stateToString(pState)}`);
-        // If the audio state is now connected, let the user hear things
-        if (pState === AssignmentClientState.CONNECTED) {
-            AudioMgr._connectInputStreamsToOutputStreams(pDomain);
-        } else {
-            // Getting here means the audio connection to the domain is disconnected
-            AudioMgr._disconnectInputAndOutputStreams(pDomain);
+    _handleDomainAudioStateChange(pDomain: Domain, pAudio: DomainAudio, pState: AssignmentClientState): void {
+        (async () => {
+            Log.debug(Log.types.AUDIO, `AudioMgr._handleAudioStateChange: ${DomainAudio.stateToString(pState)}`);
+            // If the audio state is now connected, let the user hear things
+            if (pState === AssignmentClientState.CONNECTED) {
+                await AudioMgr._setupDomainAudio(pDomain);
+            } else {
+                // Getting here means the audio connection to the domain is disconnected
+                AudioMgr._disconnectInputAndOutputStreams(pDomain);
 
+            }
+        })();
+    },
+
+    // Utility routine called when DomainAudio is CONNECTED.
+    // Copies audio information to Store and, if the user is ready, connects input and output streams.
+    async _setupDomainAudio(pDomain: Domain): Promise<void> {
+        Log.debug(Log.types.AUDIO, `AudioMgr._setupDomainAudio`);
+        const mixer = pDomain.AudioClient?.Mixer;
+        if (mixer) {
+            AudioMgr.setDomainAudioMuted(mixer.inputMuted);
+            await AudioMgr._connectInputStreamsToOutputStreams(pDomain);
         }
     },
 
     // Assuming everything is connected, connect the user's input to the domain and
     // connect the domain's input to the user's output.
-    _connectInputStreamsToOutputStreams(pDomain: Domain): void {
+    async _connectInputStreamsToOutputStreams(pDomain: Domain): Promise<void> {
         Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams`);
         if (pDomain.AudioClient && pDomain.AudioClient.Mixer) {
             if (Store.state.audio.user.userInputStream) {
                 // The user has an input device. Give it to the domain
-                AudioMgr.setAudioToDomain(Store.state.audio.user.userInputStream);
+                await AudioMgr.setAudioToDomain(Store.state.audio.user.userInputStream);
+                Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. Connecting user input to domain`);
             } else {
                 Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. Have mixer but no user mic`);
             }
             // If there is a function to set the output, connect the domain to that output
             if (AudioMgr._setAudioOutputFunction) {
-                AudioMgr._setAudioOutputFunction(pDomain.AudioClient.Mixer.audioOuput);
+                const aClient = pDomain.AudioClient;
+                if (aClient) {
+                    // eslint-disable-next-line max-len
+                    // Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. Setting output stream as ${typeof aClient.getDomainAudioStream()}`);
+                    // This timeout is a KLUDGE.
+                    // When we get the CONNECTED event from AudioMixer, the stream is not yet setup.
+                    // This waits for the codecs to be initialized before doing the assignment
+                    setTimeout(() => {
+                        const domainStream = aClient.getDomainAudioStream();
+                        // eslint-disable-next-line max-len
+                        Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. Setting output stream as ${typeof domainStream}`);
+                        if (typeof domainStream !== "undefined") {
+                            AudioMgr._setAudioOutputFunction(domainStream);
+                        }
+                        // eslint-disable-next-line @typescript-eslint/no-magic-numbers
+                    }, 3000);
+                } else {
+                    // eslint-disable-next-line max-len
+                    Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. Could not set domain audio because no mixer`);
+                }
+            } else {
+                // eslint-disable-next-line max-len
+                Log.debug(Log.types.AUDIO, `AudioMgr._connectInputAndOutputStreams. No output assignment function so no audio output`);
             }
+
         }
     },
 
     _disconnectInputAndOutputStreams(pDomain: Domain): void {
+        Log.debug(Log.types.AUDIO, `AudioMgr._disconnectInputAndOutputStreams`);
         if (pDomain.AudioClient && pDomain.AudioClient.Mixer) {
             pDomain.AudioClient.Mixer.audioInput = null;
             if (AudioMgr._setAudioOutputFunction) {
@@ -138,6 +201,149 @@ export const AudioMgr = {
             }
         }
     },
+
+    /**
+     * Set the current user input stream. This is the mic or similar input.
+     * This function will update Store as well as inform the domain of the input device.
+     * The selection is also stored in the configuration as the active input
+     * device for the next session.
+     * @param pStream stream for input. Can be 'null' if no input device.
+     * @param pDeviceInfo information on the stream
+     */
+    async setUserAudioInputStream(pStream: Nullable<MediaStream>, pDeviceInfo: Nullable<MediaDeviceInfo>): Promise<void> {
+        Store.commit(StoreMutations.MUTATE, {
+            property: "audio.user",
+            with: {
+                connected: Boolean(pStream),
+                awaitingCapturePermissions: false,
+                hasInputAccess: Boolean(pStream),
+                userInputStream: pStream,
+                currentInputDevice: pDeviceInfo
+            }
+        });
+        // If there is a stream, set up the mute state
+        const shouldBeMuted = typeof pStream === "undefined" || pStream === null;
+        AudioMgr.muteAudio(shouldBeMuted);
+        // Remember the last selected input device for next session
+        if (pDeviceInfo) {
+            Config.setItem(USER_AUDIO_INPUT, pDeviceInfo.deviceId);
+        }
+        // If there is a domain, set this stuff into the domain
+        await this.setAudioToDomain(pStream);
+    },
+
+    /**
+     * Assign the passed user input stream (mic) to be sent to the domain.
+     * @param pStream stream from user that should go to the domain
+     */
+    async setAudioToDomain(pStream: Nullable<MediaStream>): Promise<void> {
+        Log.debug(Log.types.AUDIO, `AudioMgr.setAudioToDomain: stream is ${typeof pStream}`);
+        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
+            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
+                const mixer = DomainMgr.ActiveDomain?.AudioClient?.Mixer;
+                if (mixer) {
+                    Log.debug(Log.types.AUDIO, `AudioMgr.setAudioToDomain: setting audioInput`);
+                    mixer.audioInput = pStream as MediaStream | null;
+                    this.setDomainAudioMuted(mixer.inputMuted);
+                    await this.setDomainAudioPlayPause(true);
+                }
+            }
+        }
+    },
+    // Set Play/Pause on domain audio.
+    async setDomainAudioPlayPause(pPlay: boolean): Promise<boolean> {
+        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
+            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
+                const mixer = DomainMgr.ActiveDomain.AudioClient.Mixer;
+                if (mixer) {
+                    if (pPlay) {
+                        // eslint-disable-next-line no-void
+                        await mixer.play();
+                    } else {
+                        // eslint-disable-next-line no-void
+                        await mixer.pause();
+                    }
+                    return pPlay;
+                }
+            }
+        }
+        return false;
+    },
+
+    /**
+     * Mute/unmute domain audio.
+     * @param pMute 'true' to mute. If 'undefined', complement mute
+     * @returns muted state
+     */
+    setDomainAudioMuted(pMute?: boolean): boolean {
+        const newMute = pMute ?? !Store.state.audio.user.muted;
+        Log.debug(Log.types.AUDIO, `AudioMgr.setDomainAudioMuted: ${String(newMute)}`);
+        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
+            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
+                const mixer = DomainMgr.ActiveDomain.AudioClient.Mixer;
+                if (mixer) {
+                    Log.debug(Log.types.AUDIO, `AudioMgr.setDomainAudioMuted: mixer.inputMuted = ${String(newMute)}`);
+                    mixer.inputMuted = newMute;
+                }
+            }
+        }
+        return newMute;
+    },
+
+    setUserAudioMuted(pMute?: boolean): boolean {
+        const newMute = pMute ?? !Store.state.audio.user.muted;
+        Log.debug(Log.types.AUDIO, `AudioMgr.setUserAudioMuted: ${String(newMute)}`);
+        // TODO: figure out how to set muted state on Store.state.audio.user.userInputStream
+        return newMute;
+    },
+
+    /**
+     * Specify the current output device.
+     * This will update Store as well as update the domain.
+     * The selection is also stored in the configuration as the active input
+     * device for the next session.
+     * @param pStream stream for input. Can be 'null' if no input device.
+     * @param pDeviceInfo information on the stream
+     */
+    setAudioOutputStream(pDeviceInfo: Nullable<MediaDeviceInfo>): void {
+        Store.commit(StoreMutations.MUTATE, {
+            property: "audio.user",
+            with: {
+                currentOutputDevice: pDeviceInfo
+            }
+        });
+        // Remember the last selected input device for next session
+        if (pDeviceInfo) {
+            Config.setItem(USER_AUDIO_OUTPUT, pDeviceInfo.deviceId);
+        }
+        // the output device has changed so set the domain stream to the output device
+        /*
+        const audioClient = DomainMgr.ActiveDomain?.AudioClient;
+        if (audioClient) {
+            if (audioClient.clientState === AssignmentClientState.CONNECTED) {
+                const domainStream = audioClient.getDomainAudioStream();
+                Log.debug(Log.types.AUDIO, `AudioMgr.setAudioOutputStream: setting output. ${typeof domainStream}`);
+                if (AudioMgr._setAudioOutputFunction) {
+                    AudioMgr._setAudioOutputFunction(domainStream);
+                }
+            }
+        }
+        */
+    },
+
+    /**
+     * Return the stream associated with the passed MediaDeviceInfo block.
+     * If we don't have access to the devices, null is returned
+     * @param pDInfo MediaDeviceInfo block for the device we want the stream of
+     * @returns the stream or 'null' if the stream couldn't be fetched
+     */
+    async getStreamForDeviceInfo(pDInfo: MediaDeviceInfo): Promise<Nullable<MediaStream>> {
+        const constraint = { audio: { deviceId: { exact: pDInfo.deviceId } }, video: false };
+        const stream = await navigator.mediaDevices.getUserMedia(constraint);
+        return stream;
+    },
+
+    // INITIALIZATION ================================================================================
 
     // Ask the system for the available IO devices and put in UI information
     async getAvailableInputOutputDevices(): Promise<void> {
@@ -161,129 +367,6 @@ export const AudioMgr = {
     },
 
     /**
-     * Set the current user input stream. This is the mic or similar input.
-     * This function will update Store as well as inform the domain of the input device.
-     * The selection is also stored in the configuration as the active input
-     * device for the next session.
-     * @param pStream stream for input. Can be 'null' if no input device.
-     * @param pDeviceInfo information on the stream
-     */
-    setUserAudioInputStream(pStream: Nullable<MediaStream>, pDeviceInfo: Nullable<MediaDeviceInfo>): void {
-        Store.commit(StoreMutations.MUTATE, {
-            property: "audio.user",
-            with: {
-                connected: Boolean(pStream),
-                awaitingCapturePermissions: false,
-                hasInputAccess: Boolean(pStream),
-                userInputStream: pStream,
-                currentInputDevice: pDeviceInfo
-            }
-        });
-        // Remember the last selected input device for next session
-        if (pDeviceInfo) {
-            Config.setItem(USER_AUDIO_INPUT, pDeviceInfo.deviceId);
-        }
-        // If there is a domain, set this stuff into the domain
-        this.setAudioToDomain(pStream);
-    },
-
-    /**
-     * Assign the passed user input stream (mic) to be sent to the domain.
-     * @param pStream stream from user that should go to the domain
-     */
-    setAudioToDomain(pStream: Nullable<MediaStream>): void {
-        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
-            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
-                if (DomainMgr.ActiveDomain.AudioClient.Mixer) {
-                    DomainMgr.ActiveDomain.AudioClient.Mixer.audioInput = pStream as MediaStream | null;
-                    this.setDomainAudioMuted(false);
-                    this.setDomainAudioPlayPause(true);
-                }
-            }
-        }
-    },
-    // Set Play/Pause on domain audio.
-    setDomainAudioPlayPause(pPlay: boolean): boolean {
-        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
-            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
-                const mixer = DomainMgr.ActiveDomain.AudioClient.Mixer;
-                if (mixer) {
-                    if (pPlay) {
-                        // eslint-disable-next-line no-void
-                        void mixer.play();
-                    } else {
-                        // eslint-disable-next-line no-void
-                        void mixer.pause();
-                    }
-                    return pPlay;
-                }
-            }
-        }
-        return false;
-    },
-    /**
-     * Mute/unmute domain audio.
-     * @param pMute 'true' to mute. If 'undefined', complement mute
-     * @returns muted state
-     */
-    setDomainAudioMuted(pMute?: boolean): boolean {
-        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
-            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
-                const mixer = DomainMgr.ActiveDomain.AudioClient.Mixer;
-                if (mixer) {
-                    if (typeof pMute === "undefined") {
-                        mixer.inputMuted = !mixer.inputMuted;
-                    } else {
-                        mixer.inputMuted = pMute;
-                    }
-                    return mixer.inputMuted;
-                }
-            }
-        }
-        return true;
-    },
-
-    /**
-     * Specify the current output device.
-     * This will update Store as well as update the domain.
-     * The selection is also stored in the configuration as the active input
-     * device for the next session.
-     * @param pStream stream for input. Can be 'null' if no input device.
-     * @param pDeviceInfo information on the stream
-     */
-    setAudioOutputStream(pDeviceInfo: Nullable<MediaDeviceInfo>): void {
-        Store.commit(StoreMutations.MUTATE, {
-            property: "audio.user",
-            with: {
-                currentOutputDevice: pDeviceInfo
-            }
-        });
-        // Remember the last selected input device for next session
-        if (pDeviceInfo) {
-            Config.setItem(USER_AUDIO_OUTPUT, pDeviceInfo.deviceId);
-        }
-        if (DomainMgr.ActiveDomain && DomainMgr.ActiveDomain.AudioClient) {
-            if (DomainMgr.ActiveDomain.AudioClient.clientState === AssignmentClientState.CONNECTED) {
-                if (DomainMgr.ActiveDomain.AudioClient.Mixer) {
-                    if (AudioMgr._setAudioOutputFunction) {
-                        AudioMgr._setAudioOutputFunction(DomainMgr.ActiveDomain.AudioClient.Mixer.audioOuput);
-                    }
-                }
-            }
-        }
-    },
-    /**
-     * Return the stream associated with the passed MediaDeviceInfo block.
-     * If we don't have access to the devices, null is returned
-     * @param pDInfo MediaDeviceInfo block for the device we want the stream of
-     * @returns the stream or 'null' if the stream couldn't be fetched
-     */
-    async getStreamForDeviceInfo(pDInfo: MediaDeviceInfo): Promise<Nullable<MediaStream>> {
-        const constraint = { audio: { deviceId: { exact: pDInfo.deviceId } }, video: false };
-        const stream = await navigator.mediaDevices.getUserMedia(constraint);
-        return stream;
-    },
-    /**
      * Set the initial input device.
      * This checks if a deviceId has been saved from the previous session and
      * selects that one. Otherwise, it sets the first device in the list as a default.
@@ -296,7 +379,7 @@ export const AudioMgr = {
                 Log.debug(Log.types.AUDIO, `AudioMgr: set inital Input audio device`);
                 if (Store.state.audio.inputsList.length > 0) {
                     const firstInput = Store.state.audio.inputsList[0];
-                    AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(firstInput), firstInput);
+                    await AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(firstInput), firstInput);
                 }
             } else {
                 // The user is specifying a device. Reselect that one.
@@ -305,16 +388,16 @@ export const AudioMgr = {
                     Log.debug(Log.types.AUDIO, `AudioMgr: Found input audio device from last session`);
                     // Found the input device from last session.
                     const devInfo = userDev[0];
-                    AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(devInfo), devInfo);
+                    await AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(devInfo), devInfo);
                 } else {
                     // The device is not found from last session. Default to first one
                     Log.debug(Log.types.AUDIO, `AudioMgr: Did not found input audio device from last session`);
                     const firstInput = Store.state.audio.inputsList[0];
-                    AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(firstInput), firstInput);
+                    await AudioMgr.setUserAudioInputStream(await AudioMgr.getStreamForDeviceInfo(firstInput), firstInput);
                 }
             }
         } catch (e) {
-            AudioMgr.setUserAudioInputStream(undefined, undefined);
+            await AudioMgr.setUserAudioInputStream(undefined, undefined);
         }
     },
     // eslint-disable-next-line @typescript-eslint/require-await

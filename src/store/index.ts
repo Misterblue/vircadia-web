@@ -185,7 +185,8 @@ export interface IRootState {
         outputsList: MediaDeviceInfo[]  // a list of the input devices from the browser
         user: {
             connected: boolean;             // 'true' if have audio input device
-            hasInputAccess: boolean;        // mic toggle, 'true' if input is on
+            hasInputAccess: boolean;        // has control of an input channel
+            muted: boolean;                 // whether in-from-mic/out-to-domain is muted or not
             awaitingCapturePermissions: boolean;    // waiting for user to allow access to input device
             currentInputDevice: Nullable<MediaDeviceInfo>;  // info on current selected device
             currentOutputDevice: Nullable<MediaDeviceInfo>;  // info on current selected device
@@ -280,6 +281,7 @@ export const Store = createStore<IRootState>({
             user: {
                 connected: false,
                 hasInputAccess: false,
+                muted: true,
                 awaitingCapturePermissions: false,
                 currentInputDevice: undefined,
                 currentOutputDevice: undefined,

@@ -34,6 +34,9 @@ import { AudioMgr } from "@Modules/scene/audio";
 import { Renderer } from "@Modules/scene/renderer";
 import { VScene } from "@Modules/scene/vscene";
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import Log from "@Modules/debugging/log";
+
 type Nullable<T> = T | null | undefined;
 // import Log from "@Modules/debugging/log";
 
@@ -68,12 +71,16 @@ export default defineComponent({
             Renderer.resize(newSize.height, newSize.width);
         },
         setOutputStream(pStream: Nullable<MediaStream>) {
+            Log.debug(Log.types.AUDIO, `MainScene.setOutputStream: setting output. Stream type = ${typeof pStream}`);
+            const element = this.$refs.mainSceneAudioElement as HTMLMediaElement;
             if (pStream) {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                (this.$refs.mainSceneAudioElement as HTMLMediaElement).srcObject = pStream;
+                element.srcObject = pStream;
+                // eslint-disable-next-line no-void
+                void element.play();
             } else {
-                // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                (this.$refs.mainSceneAudioElement as HTMLMediaElement).srcObject = null;
+                // eslint-disable-next-line no-void
+                void element.pause();
+                element.srcObject = null;
             }
         }
     },
